@@ -1,82 +1,23 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Search, Filter, Calendar } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useState } from "react"
 
 export default function HistoryPage() {
   const [filterTicket, setFilterTicket] = useState("todos")
+  const [historyEntries, setHistoryEntries] = useState<any[]>([])
 
-  // Datos de ejemplo
-  const historyEntries = [
-    {
-      id: 1,
-      ticketId: "TK-1234",
-      estadoAnterior: "Pendiente",
-      estadoNuevo: "En Proceso",
-      fecha: "2023-06-15 10:30",
-      usuario: "Carlos Rodríguez",
-      comentario: "Asignado a técnico para revisión",
-    },
-    {
-      id: 2,
-      ticketId: "TK-1235",
-      estadoAnterior: "Pendiente",
-      estadoNuevo: "En Proceso",
-      fecha: "2023-06-15 11:45",
-      usuario: "Ana Martínez",
-      comentario: "Iniciando diagnóstico del problema",
-    },
-    {
-      id: 3,
-      ticketId: "TK-1236",
-      estadoAnterior: "En Proceso",
-      estadoNuevo: "Resuelto",
-      fecha: "2023-06-14 14:20",
-      usuario: "Luis Gómez",
-      comentario: "Actualización completada con éxito",
-    },
-    {
-      id: 4,
-      ticketId: "TK-1234",
-      estadoAnterior: "En Proceso",
-      estadoNuevo: "Resuelto",
-      fecha: "2023-06-16 09:15",
-      usuario: "Carlos Rodríguez",
-      comentario: "Se reemplazó el cable de alimentación defectuoso",
-    },
-    {
-      id: 5,
-      ticketId: "TK-1237",
-      estadoAnterior: "Pendiente",
-      estadoNuevo: "En Proceso",
-      fecha: "2023-06-14 16:30",
-      usuario: "Elena Torres",
-      comentario: "Revisando compatibilidad de cartuchos",
-    },
-    {
-      id: 6,
-      ticketId: "TK-1238",
-      estadoAnterior: "Pendiente",
-      estadoNuevo: "En Proceso",
-      fecha: "2023-06-13 13:45",
-      usuario: "Roberto Sánchez",
-      comentario: "Verificando configuración del router",
-    },
-    {
-      id: 7,
-      ticketId: "TK-1239",
-      estadoAnterior: "En Proceso",
-      estadoNuevo: "Resuelto",
-      fecha: "2023-06-13 17:20",
-      usuario: "Ana Martínez",
-      comentario: "Configuración de SMTP corregida",
-    },
-  ]
+  useEffect(() => {
+    fetch("https://localhost:7232/api/Ticket/History")
+      .then(res => res.json())
+      .then(setHistoryEntries)
+      .catch(() => console.error("Error al cargar historial de tickets"))
+  }, [])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -94,9 +35,9 @@ export default function HistoryPage() {
   }
 
   const filteredHistory =
-    filterTicket === "todos" ? historyEntries : historyEntries.filter((entry) => entry.ticketId === filterTicket)
+    filterTicket === "todos" ? historyEntries : historyEntries.filter((entry) => entry.id_ticket.toString() === filterTicket)
 
-  const uniqueTickets = [...new Set(historyEntries.map((entry) => entry.ticketId))]
+  const uniqueTickets = [...new Set(historyEntries.map((entry) => `TK-${entry.id_ticket}`))]
 
   return (
     <div className="space-y-6">
@@ -125,9 +66,9 @@ export default function HistoryPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos los tickets</SelectItem>
-                  {uniqueTickets.map((ticketId) => (
-                    <SelectItem key={ticketId} value={ticketId}>
-                      {ticketId}
+                  {[...new Set(historyEntries.map((e) => e.id_ticket))].map((id) => (
+                    <SelectItem key={id} value={id.toString()}>
+                      TK-{id}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -144,29 +85,25 @@ export default function HistoryPage() {
                   <TableHead>Estado Anterior</TableHead>
                   <TableHead>Estado Nuevo</TableHead>
                   <TableHead>Fecha y Hora</TableHead>
-                  <TableHead>Usuario</TableHead>
-                  <TableHead>Comentario</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredHistory.map((entry) => (
-                  <TableRow key={entry.id}>
-                    <TableCell className="font-medium">{entry.id}</TableCell>
-                    <TableCell>{entry.ticketId}</TableCell>
+                  <TableRow key={entry.id_historial}>
+                    <TableCell className="font-medium">{entry.id_historial}</TableCell>
+                    <TableCell>TK-{entry.id_ticket}</TableCell>
                     <TableCell>
-                      <Badge className={getStatusColor(entry.estadoAnterior)}>{entry.estadoAnterior}</Badge>
+                      <Badge className={getStatusColor(entry.estado_anterior)}>{entry.estado_anterior}</Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge className={getStatusColor(entry.estadoNuevo)}>{entry.estadoNuevo}</Badge>
+                      <Badge className={getStatusColor(entry.estado_nuevo)}>{entry.estado_nuevo}</Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3 w-3 text-gray-500" />
-                        <span>{entry.fecha}</span>
+                        <span>{new Date(entry.fecha_cambio).toLocaleString()}</span>
                       </div>
                     </TableCell>
-                    <TableCell>{entry.usuario}</TableCell>
-                    <TableCell>{entry.comentario}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -177,4 +114,3 @@ export default function HistoryPage() {
     </div>
   )
 }
-

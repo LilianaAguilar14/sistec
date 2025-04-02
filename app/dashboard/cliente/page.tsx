@@ -1,18 +1,99 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useState } from "react"
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+interface Category {
+  id_categoria: string;
+  nombre: string;
+}
 
 export default function SettingsPage() {
-  const [notificationsEmail, setNotificationsEmail] = useState(true)
-  const [notificationsSystem, setNotificationsSystem] = useState(true)
-  const [autoAssign, setAutoAssign] = useState(false)
+  // Estados para las otras pestañas
+  const [notificationsEmail, setNotificationsEmail] = useState(true);
+  const [notificationsSystem, setNotificationsSystem] = useState(true);
+  const [autoAssign, setAutoAssign] = useState(false);
+
+  // Estados para la gestión de categorías
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [newCategory, setNewCategory] = useState("");
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [editingCategoryName, setEditingCategoryName] = useState("");
+
+  // Cargar categorías al montar el componente
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch("https://localhost:7232/api/Categoria");
+      if (!response.ok) {
+        throw new Error("Error al obtener las categorías");
+      }
+      const data = await response.json();
+      setCategories(data);
+    } catch (err: any) {
+      console.error(err.message);
+    }
+  };
+
+  const addCategory = async () => {
+    if (!newCategory.trim()) return;
+    try {
+      const response = await fetch("https://localhost:7232/api/Categoria", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre: newCategory }),
+      });
+      if (!response.ok) {
+        throw new Error("Error al agregar la categoría");
+      }
+      setNewCategory("");
+      fetchCategories();
+    } catch (err: any) {
+      console.error(err.message);
+    }
+  };
+
+  const updateCategory = async (id: string) => {
+    if (!editingCategoryName.trim()) return;
+    try {
+      const response = await fetch(`https://localhost:7232/api/Categoria/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre: editingCategoryName }),
+      });
+      if (!response.ok) {
+        throw new Error("Error al actualizar la categoría");
+      }
+      setEditingCategoryId(null);
+      setEditingCategoryName("");
+      fetchCategories();
+    } catch (err: any) {
+      console.error(err.message);
+    }
+  };
+
+  const deleteCategory = async (id: string) => {
+    try {
+      const response = await fetch(`https://localhost:7232/api/Categoria/${id}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        throw new Error("Error al eliminar la categoría");
+      }
+      fetchCategories();
+    } catch (err: any) {
+      console.error(err.message);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -143,27 +224,80 @@ export default function SettingsPage() {
                 <CardDescription>Administra las categorías para clasificar los tickets.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Formulario para agregar nueva categoría */}
                 <div className="space-y-2">
                   <Label htmlFor="new-category">Nueva Categoría</Label>
                   <div className="flex gap-2">
-                    <Input id="new-category" placeholder="Nombre de la categoría" />
-                    <Button className="bg-purple-600 hover:bg-purple-700">Agregar</Button>
+                    <Input
+                      id="new-category"
+                      placeholder="Nombre de la categoría"
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
+                    />
+                    <Button onClick={addCategory} className="bg-purple-600 hover:bg-purple-700">
+                      Agregar
+                    </Button>
                   </div>
                 </div>
+                {/* Listado de categorías existentes */}
                 <div className="space-y-2">
                   <Label>Categorías Existentes</Label>
                   <div className="border rounded-md p-4 space-y-2">
-                    {["Hardware", "Software", "Red", "Sistema"].map((category, index) => (
-                      <div key={index} className="flex items-center justify-between">
-                        <span>{category}</span>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
-                            Editar
-                          </Button>
-                          <Button variant="outline" size="sm" className="text-red-500">
-                            Eliminar
-                          </Button>
-                        </div>
+                    {categories.length === 0 && <p>No hay categorías registradas.</p>}
+                    {categories.map((category) => (
+                      <div key={category.id_categoria} className="flex items-center justify-between">
+                        {editingCategoryId === category.id_categoria ? (
+                          <>
+                            <Input
+                              value={editingCategoryName}
+                              onChange={(e) => setEditingCategoryName(e.target.value)}
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => updateCategory(category.id_categoria)}
+                              >
+                                Guardar
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-red-500"
+                                onClick={() => {
+                                  setEditingCategoryId(null);
+                                  setEditingCategoryName("");
+                                }}
+                              >
+                                Cancelar
+                              </Button>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <span>{category.nombre}</span>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setEditingCategoryId(category.id_categoria);
+                                  setEditingCategoryName(category.nombre);
+                                }}
+                              >
+                                Editar
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-red-500"
+                                onClick={() => deleteCategory(category.id_categoria)}
+                              >
+                                Eliminar
+                              </Button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -219,6 +353,5 @@ export default function SettingsPage() {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }
-

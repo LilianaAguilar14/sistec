@@ -12,6 +12,7 @@ import {
   LogOut,
   Menu,
   X,
+  Settings,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
@@ -36,10 +37,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Agentes", href: "/dashboard/agents", icon: Users },
+    //{ name: "Agentes", href: "/dashboard/agents", icon: Users },
     { name: "Historial", href: "/dashboard/history", icon: History },
     { name: "Reportes", href: "/dashboard/reports", icon: BarChart3 },
-    { name: "Clientes", href: "/dashboard/cliente", icon: Users },
+    { name: "Configuraciones", href: "/dashboard/cliente", icon: Settings },
     { name: "Tickets", href: "/dashboard/tickets", icon: Ticket },
   ]
 
@@ -49,7 +50,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const filteredNavigation = navigation.filter((item) => {
     if (rol === "ADMIN") return true
-    if (rol === "AGENTE") return !["Agentes", "Reportes", "Clientes"].includes(item.name)
+    if (rol === "AGENTE") return ["Dashboard", "Historial", "Tickets"].includes(item.name)
     if (rol === "CLIENTE") return ["Dashboard", "Historial"].includes(item.name)
     return false
   })
